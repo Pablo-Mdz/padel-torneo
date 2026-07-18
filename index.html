@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Padel Fiesta · Día del Amigo</title>
+<title>Torneos 4Padel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Permanent+Marker&display=swap" rel="stylesheet" />
@@ -32,12 +32,8 @@
   .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 20px 80px; }
 
   header.top { margin-bottom: 26px; }
-  header.top .amigo {
-    font-family: "Permanent Marker", cursive; color: var(--text);
-    font-size: 19px; letter-spacing: 3px; text-transform: uppercase;
-    display: inline-block; transform: rotate(-3deg); margin-bottom: 4px;
-  }
   header.top h1 { font-size: 42px; font-weight: 700; letter-spacing: 2px; line-height: 1; color: #d9d5cd; }
+  header.top h1 span { color: var(--accent); }
   header.top .sub {
     color: var(--accent); font-family: "Oswald", sans-serif; font-size: 15px;
     letter-spacing: 5px; text-transform: uppercase; margin-top: 8px;
@@ -70,6 +66,11 @@
   .ronda-title:first-child { margin-top: 0; }
   .ronda-title b { color: var(--accent); }
   .ronda-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .descansa {
+    color: var(--muted); font-family: "Oswald", sans-serif; font-size: 13px;
+    letter-spacing: 2px; text-transform: uppercase; margin: -8px 0 14px;
+  }
+  .descansa b { color: var(--text); font-weight: 600; }
 
   .matches { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
 
@@ -135,12 +136,29 @@
   .hint { color: var(--muted); font-size: 13px; margin-top: 10px; }
 
   /* Equipos */
+  .equipos-actions { display: flex; justify-content: flex-end; margin-bottom: 18px; }
+  .btn-add {
+    appearance: none; background: var(--accent); border: 0; border-radius: 8px;
+    color: #111; font-family: "Oswald", sans-serif; font-size: 14px; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase; padding: 12px 20px; cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-add:hover { background: var(--accent-dark); }
+
   .equipos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
   .equipo-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .equipo-card .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .equipo-card .num {
     font-family: "Oswald", sans-serif; font-size: 13px; font-weight: 600;
-    letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-bottom: 12px;
+    letter-spacing: 3px; color: var(--accent); text-transform: uppercase;
   }
+  .btn-del {
+    appearance: none; background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--muted); font-size: 14px; line-height: 1; padding: 6px 9px; cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-del:hover { border-color: var(--red); color: var(--red); }
+  .btn-del:disabled { opacity: .3; cursor: not-allowed; }
   .equipo-card label { display: block; color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin: 12px 0 5px; }
   .equipo-card input {
     width: 100%; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
@@ -170,6 +188,7 @@
   footer.sponsors .sep { color: var(--accent); }
 
   @media (max-width: 640px) {
+    header.top h1 { font-size: 32px; }
     .tab { font-size: 13px; letter-spacing: 1px; padding: 13px 6px; }
     .tab svg { display: none; }
     thead th, tbody td { padding: 12px 6px; font-size: 13px; }
@@ -181,9 +200,8 @@
 <div class="wrap">
 
   <header class="top">
-    <div class="amigo">Día del Amigo</div>
-    <h1>Padel Fiesta</h1>
-    <div class="sub">Sat. 18.07 <span class="sep">|</span> 20 Uhr <span class="sep">·</span> 6 equipos <span class="sep">·</span> 3 canchas</div>
+    <h1>Torneos <span>4Padel</span></h1>
+    <div class="sub" id="sub-line"></div>
   </header>
 
   <nav class="tabs">
@@ -231,9 +249,12 @@
   </section>
 
   <section id="view-equipos" class="view">
+    <div class="equipos-actions">
+      <button class="btn-add" id="btn-add">+ Agregar equipo</button>
+    </div>
     <div class="equipos-grid" id="equipos-grid"></div>
     <div class="actions">
-      <button class="btn-reset" id="btn-reset">Reiniciar torneo</button>
+      <button class="btn-reset" id="btn-reset">Borrar todos los resultados</button>
     </div>
   </section>
 
@@ -244,19 +265,20 @@
 </div>
 
 <script>
-const STORAGE_KEY = "padel-torneo-v1";
+const STORAGE_KEY = "padel-torneo-v2";
+const LEGACY_KEY = "padel-torneo-v1";
 
 const DEFAULT_TEAMS = [
-  { name: "MAS - RODON",          p1: "Martina Mas",             p2: "Jordi Rodon" },
-  { name: "NGUYEN - SIEVER",      p1: "Kien Quang Nguyen",       p2: "Daniel Siever" },
-  { name: "DELGADO - GUADAGNO",   p1: "Lautaro Delgado Curbelo", p2: "Riccardo Guadagno" },
-  { name: "ROSENSTIEHL - NGUY",   p1: "Simon Rosenstiehl",       p2: "Stephane Nguy" },
-  { name: "BORTOLOTTI - GARCIA",  p1: "Francesca Bortolotti",    p2: "Jonathan Garcia" },
-  { name: "RABINO - RODRIGUEZ",   p1: "Josefina Rabino",         p2: "Marc Rodriguez" },
+  { id: 1, name: "MAS - RODON",          p1: "Martina Mas",             p2: "Jordi Rodon" },
+  { id: 2, name: "NGUYEN - SIEVER",      p1: "Kien Quang Nguyen",       p2: "Daniel Siever" },
+  { id: 3, name: "DELGADO - GUADAGNO",   p1: "Lautaro Delgado Curbelo", p2: "Riccardo Guadagno" },
+  { id: 4, name: "ROSENSTIEHL - NGUY",   p1: "Simon Rosenstiehl",       p2: "Stephane Nguy" },
+  { id: 5, name: "BORTOLOTTI - GARCIA",  p1: "Francesca Bortolotti",    p2: "Jonathan Garcia" },
+  { id: 6, name: "RABINO - RODRIGUEZ",   p1: "Josefina Rabino",         p2: "Marc Rodriguez" },
 ];
 
-// Round-robin (método del círculo) para 6 equipos: 5 rondas, 3 canchas.
-const ROUNDS = [
+// Fixture del formato v1 (6 equipos fijos), solo para migrar resultados viejos.
+const LEGACY_ROUNDS = [
   [[0,5],[1,4],[2,3]],
   [[0,4],[5,3],[1,2]],
   [[0,3],[4,2],[5,1]],
@@ -271,16 +293,39 @@ function load() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const s = JSON.parse(raw);
-      if (s.teams?.length === 6 && s.scores) return s;
+      if (Array.isArray(s.teams) && s.teams.length >= 2 && s.scores) return s;
+    }
+  } catch (e) {}
+  try {
+    const raw = localStorage.getItem(LEGACY_KEY);
+    if (raw) {
+      const old = JSON.parse(raw);
+      if (old.teams?.length === 6 && old.scores) return migrateV1(old);
     }
   } catch (e) {}
   return freshState();
 }
 
+function migrateV1(old) {
+  const teams = old.teams.map((t, i) => ({ id: i + 1, name: t.name, p1: t.p1, p2: t.p2 }));
+  const scores = {};
+  LEGACY_ROUNDS.forEach((round, r) => {
+    round.forEach(([ta, tb], m) => {
+      const sc = old.scores[r + "-" + m];
+      if (!sc || (sc.a == null && sc.b == null)) return;
+      scores[pairKey(teams[ta].id, teams[tb].id)] = { [teams[ta].id]: sc.a, [teams[tb].id]: sc.b };
+    });
+  });
+  const migrated = { teams, scores };
+  state = migrated;
+  save();
+  return migrated;
+}
+
 function freshState() {
   return {
     teams: DEFAULT_TEAMS.map(t => ({ ...t })),
-    // scores["r-m"] = { a: number|null, b: number|null }
+    // scores[pairKey] = { [teamId]: puntos, [teamId]: puntos }
     scores: {},
   };
 }
@@ -293,74 +338,123 @@ function save() {
   } catch (e) {}
 }
 
-function getScore(r, m) {
-  return state.scores[r + "-" + m] || { a: null, b: null };
+function pairKey(idA, idB) {
+  return idA < idB ? idA + "_" + idB : idB + "_" + idA;
 }
 
-function setScore(r, m, side, value) {
-  const key = r + "-" + m;
-  const cur = state.scores[key] || { a: null, b: null };
-  cur[side] = value === "" ? null : Math.max(0, parseInt(value, 10) || 0);
+function getScore(idA, idB) {
+  const sc = state.scores[pairKey(idA, idB)] || {};
+  return { a: sc[idA] ?? null, b: sc[idB] ?? null };
+}
+
+function setScore(idA, idB, ownId, value) {
+  const key = pairKey(idA, idB);
+  const cur = state.scores[key] || {};
+  if (value === "") delete cur[ownId];
+  else cur[ownId] = Math.max(0, parseInt(value, 10) || 0);
   state.scores[key] = cur;
   save();
   renderTabla();
-  updateWinnerHighlight(r, m);
+}
+
+function nextTeamId() {
+  return state.teams.reduce((m, t) => Math.max(m, t.id), 0) + 1;
+}
+
+// Round-robin (método del círculo) para n equipos.
+// Si n es impar se agrega un "bye": cada ronda descansa un equipo.
+// Devuelve rondas de pares de índices sobre state.teams.
+function buildRounds(n) {
+  const idx = [...Array(n).keys()];
+  if (n % 2 === 1) idx.push(-1);
+  const m = idx.length;
+  const rot = idx.slice(1);
+  const rounds = [];
+  for (let r = 0; r < m - 1; r++) {
+    const cur = [idx[0], ...rot];
+    const pairs = [];
+    let bye = null;
+    for (let i = 0; i < m / 2; i++) {
+      const a = cur[i], b = cur[m - 1 - i];
+      if (a === -1) bye = b;
+      else if (b === -1) bye = a;
+      else pairs.push([a, b]);
+    }
+    rounds.push({ pairs, bye });
+    rot.push(rot.shift());
+  }
+  return rounds;
+}
+
+/* ---------- Header ---------- */
+function renderHeader() {
+  const n = state.teams.length;
+  const canchas = Math.floor(n / 2);
+  document.getElementById("sub-line").innerHTML =
+    `${n} equipos <span class="sep">·</span> ${canchas} cancha${canchas === 1 ? "" : "s"} <span class="sep">·</span> todos contra todos`;
 }
 
 /* ---------- Partidos ---------- */
 function renderPartidos() {
   const root = document.getElementById("view-partidos");
   root.innerHTML = "";
-  ROUNDS.forEach((round, r) => {
+  const rounds = buildRounds(state.teams.length);
+
+  rounds.forEach((round, r) => {
     const title = document.createElement("h2");
     title.className = "ronda-title";
     title.innerHTML = `Ronda <b>${r + 1}</b>`;
     root.appendChild(title);
 
+    if (round.bye != null) {
+      const d = document.createElement("div");
+      d.className = "descansa";
+      d.innerHTML = `Descansa: <b>${esc(state.teams[round.bye].name)}</b>`;
+      root.appendChild(d);
+    }
+
     const grid = document.createElement("div");
     grid.className = "matches";
 
-    round.forEach(([ta, tb], m) => {
-      const sc = getScore(r, m);
+    round.pairs.forEach(([ta, tb], m) => {
+      const A = state.teams[ta], B = state.teams[tb];
+      const sc = getScore(A.id, B.id);
       const card = document.createElement("div");
       card.className = "match";
-      card.id = `match-${r}-${m}`;
       card.innerHTML = `
         <div class="head">
           <span class="cancha">Cancha</span>
           <span class="cancha-num">${m + 1}</span>
         </div>
         <div class="team-row" data-side="a">
-          <span class="name">${esc(state.teams[ta].name)}</span>
+          <span class="name">${esc(A.name)}</span>
           <input class="score" type="number" min="0" inputmode="numeric" placeholder="-"
-                 value="${sc.a ?? ""}" data-r="${r}" data-m="${m}" data-side="a" />
+                 value="${sc.a ?? ""}" data-ia="${A.id}" data-ib="${B.id}" data-own="${A.id}" />
         </div>
         <div class="vs">vs</div>
         <div class="team-row" data-side="b">
-          <span class="name">${esc(state.teams[tb].name)}</span>
+          <span class="name">${esc(B.name)}</span>
           <input class="score" type="number" min="0" inputmode="numeric" placeholder="-"
-                 value="${sc.b ?? ""}" data-r="${r}" data-m="${m}" data-side="b" />
+                 value="${sc.b ?? ""}" data-ia="${A.id}" data-ib="${B.id}" data-own="${B.id}" />
         </div>
       `;
       grid.appendChild(card);
+      updateWinnerHighlight(card, A.id, B.id);
     });
     root.appendChild(grid);
   });
 
   root.querySelectorAll("input.score").forEach(inp => {
     inp.addEventListener("input", e => {
-      const { r, m, side } = e.target.dataset;
-      setScore(+r, +m, side, e.target.value);
+      const { ia, ib, own } = e.target.dataset;
+      setScore(+ia, +ib, +own, e.target.value);
+      updateWinnerHighlight(e.target.closest(".match"), +ia, +ib);
     });
   });
-
-  ROUNDS.forEach((round, r) => round.forEach((_, m) => updateWinnerHighlight(r, m)));
 }
 
-function updateWinnerHighlight(r, m) {
-  const card = document.getElementById(`match-${r}-${m}`);
-  if (!card) return;
-  const sc = getScore(r, m);
+function updateWinnerHighlight(card, idA, idB) {
+  const sc = getScore(idA, idB);
   const rowA = card.querySelector('.team-row[data-side="a"]');
   const rowB = card.querySelector('.team-row[data-side="b"]');
   rowA.classList.remove("winner");
@@ -372,16 +466,17 @@ function updateWinnerHighlight(r, m) {
 
 /* ---------- Tabla ---------- */
 function computeStandings() {
-  const rows = state.teams.map((t, i) => ({
-    idx: i, name: t.name, p1: t.p1, p2: t.p2,
+  const rows = state.teams.map(t => ({
+    id: t.id, name: t.name, p1: t.p1, p2: t.p2,
     pj: 0, g: 0, p: 0, e: 0, gf: 0, gc: 0, pts: 0,
   }));
+  const byId = Object.fromEntries(rows.map(r => [r.id, r]));
 
-  ROUNDS.forEach((round, r) => {
-    round.forEach(([ta, tb], m) => {
-      const sc = getScore(r, m);
+  buildRounds(state.teams.length).forEach(round => {
+    round.pairs.forEach(([ta, tb]) => {
+      const A = byId[state.teams[ta].id], B = byId[state.teams[tb].id];
+      const sc = getScore(A.id, B.id);
       if (sc.a == null || sc.b == null) return;
-      const A = rows[ta], B = rows[tb];
       A.pj++; B.pj++;
       A.gf += sc.a; A.gc += sc.b;
       B.gf += sc.b; B.gc += sc.a;
@@ -424,28 +519,68 @@ function renderTabla() {
 /* ---------- Equipos ---------- */
 function renderEquipos() {
   const grid = document.getElementById("equipos-grid");
+  const canDelete = state.teams.length > 2;
   grid.innerHTML = state.teams.map((t, i) => `
     <div class="equipo-card">
-      <div class="num">Equipo ${i + 1}</div>
+      <div class="card-top">
+        <span class="num">Equipo ${i + 1}</span>
+        <button class="btn-del" data-id="${t.id}" title="Eliminar equipo" ${canDelete ? "" : "disabled"}>✕</button>
+      </div>
       <label>Nombre del equipo</label>
-      <input class="team-name" data-i="${i}" data-field="name" value="${esc(t.name)}" />
+      <input class="team-name" data-id="${t.id}" data-field="name" value="${esc(t.name)}" />
       <label>Jugador/a 1</label>
-      <input data-i="${i}" data-field="p1" value="${esc(t.p1)}" />
+      <input data-id="${t.id}" data-field="p1" value="${esc(t.p1)}" />
       <label>Jugador/a 2</label>
-      <input data-i="${i}" data-field="p2" value="${esc(t.p2)}" />
+      <input data-id="${t.id}" data-field="p2" value="${esc(t.p2)}" />
     </div>
   `).join("");
 
   grid.querySelectorAll("input").forEach(inp => {
     inp.addEventListener("input", e => {
-      const { i, field } = e.target.dataset;
-      state.teams[+i][field] = e.target.value;
+      const { id, field } = e.target.dataset;
+      const team = state.teams.find(t => t.id === +id);
+      if (!team) return;
+      team[field] = e.target.value;
       save();
+      renderHeader();
       renderPartidos();
       renderTabla();
     });
   });
+
+  grid.querySelectorAll(".btn-del").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = +btn.dataset.id;
+      const team = state.teams.find(t => t.id === id);
+      if (!team) return;
+      if (!confirm(`¿Eliminar "${team.name}"? Se borran sus resultados y el fixture se rearma.`)) return;
+      state.teams = state.teams.filter(t => t.id !== id);
+      for (const key of Object.keys(state.scores)) {
+        const [a, b] = key.split("_").map(Number);
+        if (a === id || b === id) delete state.scores[key];
+      }
+      save();
+      renderAll();
+    });
+  });
 }
+
+document.getElementById("btn-add").addEventListener("click", () => {
+  const id = nextTeamId();
+  state.teams.push({ id, name: `EQUIPO ${state.teams.length + 1}`, p1: "", p2: "" });
+  save();
+  renderAll();
+  const inputs = document.querySelectorAll(`#equipos-grid input[data-id="${id}"]`);
+  if (inputs[0]) { inputs[0].focus(); inputs[0].select(); }
+});
+
+document.getElementById("btn-reset").addEventListener("click", () => {
+  if (confirm("¿Borrar todos los resultados? Los equipos se mantienen.")) {
+    state.scores = {};
+    save();
+    renderAll();
+  }
+});
 
 /* ---------- Tabs ---------- */
 document.querySelectorAll(".tab").forEach(btn => {
@@ -458,24 +593,19 @@ document.querySelectorAll(".tab").forEach(btn => {
   });
 });
 
-document.getElementById("btn-reset").addEventListener("click", () => {
-  if (confirm("¿Reiniciar el torneo? Se borran resultados y se restauran los equipos originales.")) {
-    state = freshState();
-    save();
-    renderPartidos();
-    renderTabla();
-    renderEquipos();
-  }
-});
-
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-renderPartidos();
-renderTabla();
-renderEquipos();
+function renderAll() {
+  renderHeader();
+  renderPartidos();
+  renderTabla();
+  renderEquipos();
+}
+
+renderAll();
 </script>
 </body>
 </html>
